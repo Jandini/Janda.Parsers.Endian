@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
 namespace Janda.Parsers
@@ -6,20 +7,19 @@ namespace Janda.Parsers
     public static class ByteArrayExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short ParseAsBEInt16(this byte[] buffer, int index)
+        public static short ReadAsBigEndianToInt16(this byte[] buffer, int index)
         {
             return (short)((buffer[index++] << 8) | buffer[index++]);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ushort ParseAsBEUInt16(this byte[] buffer, int index)
+        public static ushort ReadAsBigEndianToUInt16(this byte[] buffer, int index)
         {
             return (ushort)((buffer[index++] << 8) | buffer[index++]);
         }
-
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ushort ParseAsBEUInt16(this byte[] buffer, int index, bool isLittleEndian = false)
+        public static ushort ReadAsBigEndianToUnit16(this byte[] buffer, int index, bool isLittleEndian = false)
         {
             return isLittleEndian != BitConverter.IsLittleEndian
                 ? (ushort)((buffer[index++] << 8) | buffer[index++])
@@ -28,7 +28,7 @@ namespace Janda.Parsers
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint ParseAsBEUInt32(this byte[] buffer, int index)
+        public static uint ReadAsBigEndianToUInt32(this byte[] buffer, int index)
         {
             return (uint)((buffer[index++] << 24)
                 | (buffer[index++] << 16)
@@ -37,7 +37,7 @@ namespace Janda.Parsers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint ParseAsBEUInt32(this byte[] buffer, int index, bool isLittleEndian = false)
+        public static uint ReadAsBigEndianToUInt32(this byte[] buffer, int index, bool isLittleEndian = false)
         {
             return isLittleEndian != BitConverter.IsLittleEndian
                 ? (uint)((buffer[index++] << 24) | (buffer[index++] << 16) | (buffer[index++] << 8) | buffer[index++])
@@ -46,8 +46,10 @@ namespace Janda.Parsers
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ParseAsBEInt32(this byte[] buffer, int index)
+        public static int ReadAsBigEndianToInt32(this byte[] buffer, int index)
         {
+            // This is slightliy faster than BinaryPrimitives.ReadInt32BigEndian
+            // 339ms vs 592ms
             return (int)((buffer[index++] << 24)
                 | (buffer[index++] << 16)
                 | (buffer[index++] << 8)
@@ -56,28 +58,27 @@ namespace Janda.Parsers
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static long ParseAsBEInt64(this byte[] buffer, int index)
+        public static long ReadAsBigEndianToInt64(this byte[] buffer, int index)
         {
-            // Using BitConverter and SwapBytes is faster than direct access to buffer
-            return BitConverter.ToInt64(buffer, index).SwapBytes();
+            // BinaryPrimitives are 4x faster than BitConverter 
+            Span<byte> span = buffer;
+            return BinaryPrimitives.ReadInt64BigEndian(span.Slice(index));            
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong ParseAsBEUInt64(this byte[] buffer, int index)
+        public static ulong ReadAsBigEndianToUInt64(this byte[] buffer, int index)
         {
-            // Using BitConverter and SwapBytes is faster than direct access to buffer
-            return BitConverter.ToUInt64(buffer, index).SwapBytes();
+            Span<byte> span = buffer;
+            return BinaryPrimitives.ReadUInt64BigEndian(span.Slice(index));
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteAsBigEndian(this byte[] buffer, int index, uint value)
+        public static void WriteAsBigEndianUInt32(this byte[] buffer, int index, uint value)
         {
-            buffer[index++] = (byte)((0xFF000000 & value) >> 24);
-            buffer[index++] = (byte)((0x00FF0000 & value) >> 16);
-            buffer[index++] = (byte)((0x0000FF00 & value) >> 8);
-            buffer[index++] = (byte)(0x000000FF & value);
+            Span<byte> span = buffer;
+            BinaryPrimitives.WriteUInt32BigEndian(span.Slice(index), value);
         }
     }
 }

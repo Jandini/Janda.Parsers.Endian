@@ -6,7 +6,7 @@ namespace Janda.Parsers
     public static class BinaryReaderExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint ParseBEUInt32(this BinaryReader reader)
+        public static uint ReadAsBigEndianToUInt32(this BinaryReader reader)
         {
             uint value = reader.ReadUInt32();
 
